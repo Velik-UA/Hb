@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OLEA Workspace 2026 — Release Pipeline</title>
+<meta name="theme-color" content="#5546D6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F4F1;
+    --dot: rgba(20,20,30,.07);
+    --surface:#FFFFFF;
+    --surface-tint:#F0EDFC;
+    --ink:#15161B;
+    --ink-soft:#6E7180;
+    --line:#E6E3DC;
+    --accent:#5546D6;
+    --accent-soft:#ECE9FB;
+    --teal:#0E8E82;
+    --teal-soft:#DFF3F1;
+    --amber:#B5740A;
+    --amber-soft:#FBEFDC;
+    --green:#1C9D5B;
+    --green-soft:#E1F5EA;
+    --shadow:0 1px 2px rgba(20,20,30,.05), 0 10px 28px rgba(20,20,30,.07);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--bg);
+    background-image:radial-gradient(var(--dot) 1px, transparent 1px);
+    background-size:18px 18px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    width:100%;
+    max-width:460px;
+    min-height:100vh;
+    background:transparent;
+    display:flex;
+    flex-direction:column;
+    padding:0 16px 40px;
+  }
+  /* ---------- TOPBAR ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 4px 10px;
+  }
+  .brand{display:flex;align-items:baseline;gap:8px;}
+  .brand-mark{color:var(--accent);font-size:18px;transform:translateY(1px) rotate(8deg);display:inline-block;}
+  .brand-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;letter-spacing:.01em;}
+  .brand-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);letter-spacing:.02em;}
+  .topbar-right{display:flex;align-items:center;gap:8px;}
+  .version-pill{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    padding:4px 9px;
+    border-radius:100px;
+  }
+  .icon-btn{
+    width:30px;height:30px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink-soft);font-size:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:background .15s, color .15s;
+  }
+  .icon-btn:hover{background:var(--accent-soft);color:var(--accent);}
+  .icon-btn:focus-visible, button:focus-visible, .checklist-item:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;
+  }
+  /* ---------- PIPELINE ---------- */
+  .pipeline{padding:10px 6px 22px;}
+  .pipeline-track{position:relative;display:flex;justify-content:space-between;align-items:flex-start;}
+  .pipeline-track::before{
+    content:'';position:absolute;top:7px;left:7px;right:7px;height:2px;background:var(--line);z-index:0;
+  }
+  .pipeline-fill{
+    position:absolute;top:7px;left:7px;height:2px;background:var(--accent);z-index:1;
+    width:0%;transition:width .6s cubic-bezier(.4,0,.2,1);
+  }
+  .node{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+  .node-dot{
+    width:14px;height:14px;border-radius:50%;background:var(--bg);border:2px solid var(--line);
+    transition:all .4s ease;
+  }
+  .node.done .node-dot{background:var(--accent);border-color:var(--accent);}
+  .node.active .node-dot{
+    border-color:var(--accent);background:var(--bg);
+    box-shadow:0 0 0 0 rgba(85,70,214,.5);
+    animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(85,70,214,.45);}
+    70%{box-shadow:0 0 0 7px rgba(85,70,214,0);}
+    100%{box-shadow:0 0 0 0 rgba(85,70,214,0);}
+  }
+  .node-label{
+    font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.04em;
+    color:var(--ink-soft);text-transform:uppercase;text-align:center;
+  }
+  .node.done .node-label, .node.active .node-label{color:var(--ink);}
+  /* ---------- FEED ---------- */
+  .feed{display:flex;flex-direction:column;gap:10px;flex:1;}
+  .log-row{
+    display:flex;align-items:center;gap:10px;padding:10px 14px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    opacity:.85;
+  }
+  .log-check{
+    width:18px;height:18px;border-radius:50%;background:var(--green-soft);color:var(--green);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .log-check svg{width:10px;height:10px;}
+  .log-text{font-size:13px;color:var(--ink-soft);flex:1;}
+  .log-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);opacity:.7;}
+  /* ---------- CARD ---------- */
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px 18px 18px;box-shadow:var(--shadow);
+    animation:rise .45s cubic-bezier(.2,.7,.3,1);
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .tag{
+    display:inline-flex;align-items:center;font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.05em;padding:4px 9px;border-radius:7px;margin-bottom:12px;
+  }
+  .tag.violet{background:var(--accent-soft);color:var(--accent);}
+  .tag.teal{background:var(--teal-soft);color:var(--teal);}
+  .tag.amber{background:var(--amber-soft);color:var(--amber);}
+  .tag.green{background:var(--green-soft);color:var(--green);}
+  .kicker{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;
+    color:var(--accent);margin:-2px 0 8px;
+  }
+  .card h2{
+    font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin:0 0 12px;line-height:1.25;
+  }
+  .card p{font-size:14.5px;line-height:1.55;margin:0 0 10px;color:var(--ink);}
+  .meta-table{margin:14px 0 16px;border-top:1px solid var(--line);}
+  .meta-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .meta-key{font-size:12.5px;color:var(--ink-soft);}
+  .meta-val{font-size:13px;font-weight:600;text-align:right;}
+  .bullets{margin:0 0 14px;padding:0;list-style:none;}
+  .bullets li{
+    font-size:14px;line-height:1.5;padding:5px 0 5px 18px;position:relative;color:var(--ink);
+  }
+  .bullets li::before{content:'—';position:absolute;left:0;color:var(--ink-soft);}
+  .callout{
+    background:var(--surface-tint);border-radius:12px;padding:12px 14px;margin:6px 0 14px;
+    font-size:13.5px;line-height:1.5;color:var(--ink);
+  }
+  .callout b{font-weight:600;}
+  .perm-row{display:flex;gap:14px;margin:4px 0 16px;}
+  .perm{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);}
+  .btn{
+    width:100%;border:none;border-radius:12px;padding:14px 16px;font-family:'Inter',sans-serif;
+    font-size:14.5px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;
+    transition:transform .15s, opacity .15s;margin-top:4px;
+  }
+  .btn:hover{opacity:.92;}
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{background:var(--line);color:var(--ink-soft);cursor:not-allowed;}
+  /* ---------- TOAST CARD ---------- */
+  .toast-card{
+    background:var(--green-soft);border:1px solid #c6e8d3;border-radius:var(--radius);
+    padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px;animation:rise .45s ease;
+  }
+  .toast-top{display:flex;align-items:center;gap:10px;}
+  .toast-icon{
+    width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .toast-icon svg{width:13px;height:13px;}
+  .toast-title{font-weight:600;font-size:14px;}
+  .toast-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);margin-left:36px;}
+  /* ---------- CHECKLIST ---------- */
+  .checklist{margin:6px 0 16px;display:flex;flex-direction:column;gap:8px;}
+  .checklist-item{
+    display:flex;align-items:center;gap:11px;padding:12px 13px;border:1px solid var(--line);
+    border-radius:12px;cursor:pointer;background:var(--surface);transition:border-color .15s, background .15s;
+  }
+  .checklist-item.checked{border-color:var(--green);background:var(--green-soft);}
+  .box{
+    width:19px;height:19px;border-radius:6px;border:2px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;transition:all .15s;
+  }
+  .checklist-item.checked .box{background:var(--green);border-color:var(--green);}
+  .box svg{width:11px;height:11px;opacity:0;transition:opacity .15s;}
+  .checklist-item.checked .box svg{opacity:1;}
+  .checklist-item span.label{font-size:14px;}
+  .checklist-item.checked span.label{color:var(--green);}
+  /* ---------- RELEASE ---------- */
+  .release-version{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft);margin-bottom:6px;
+  }
+  .release-block{margin:14px 0;}
+  .release-block h4{
+    font-family:'Space Grotesk',sans-serif;font-size:12.5px;letter-spacing:.03em;
+    text-transform:uppercase;color:var(--ink-soft);margin:0 0 8px;
+  }
+  .feat-row{display:flex;align-items:flex-start;gap:9px;padding:5px 0;font-size:14px;}
+  .feat-row .mini-check{
+    width:17px;height:17px;border-radius:50%;background:var(--green-soft);color:var(--green);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+  }
+  .feat-row.fixed .mini-check{background:var(--teal-soft);color:var(--teal);}
+  .feat-row .mini-check svg{width:9px;height:9px;}
+  .status-pill{
+    display:inline-flex;align-items:center;gap:7px;background:var(--green-soft);color:var(--green);
+    font-weight:600;font-size:13px;padding:8px 13px;border-radius:100px;margin:8px 0 18px;
+  }
+  .status-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .footer-msg{
+    border-top:1px solid var(--line);margin-top:6px;padding-top:14px;
+    font-size:12.5px;font-style:italic;color:var(--ink-soft);text-align:center;line-height:1.5;
+  }
+  .footer{margin-top:24px;text-align:center;}
+  .footer-note{font-size:11px;color:var(--ink-soft);opacity:.7;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  /* ---------- CONFETTI ---------- */
+  .confetti-layer{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50;}
+  .confetti-piece{
+    position:absolute;top:-20px;border-radius:3px;opacity:.9;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{transform:translateY(110vh) rotate(380deg);opacity:.2;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card, .toast-card{animation:none;}
+    .node.active .node-dot{animation:none;}
+    .confetti-piece{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◆</span>
+      <span class="brand-name">OLEA</span>
+      <span class="brand-sub">Workspace OS</span>
+    </div>
+    <div class="topbar-right">
+      <span class="version-pill mono" id="versionPill">v2026.1</span>
+      <button class="icon-btn" id="resetBtn" title="Скинути прогрес" aria-label="Скинути прогрес">↺</button>
+    </div>
+  </div>
+
+  <div class="pipeline" aria-label="Хід проєкту">
+    <div class="pipeline-track">
+      <div class="pipeline-fill" id="pipelineFill"></div>
+      <div class="node" data-node="0"><span class="node-dot"></span><span class="node-label">Brief</span></div>
+      <div class="node" data-node="1"><span class="node-dot"></span><span class="node-label">Research</span></div>
+      <div class="node" data-node="2"><span class="node-dot"></span><span class="node-label">Delivery</span></div>
+      <div class="node" data-node="3"><span class="node-dot"></span><span class="node-label">Install</span></div>
+      <div class="node" data-node="4"><span class="node-dot"></span><span class="node-label">Release</span></div>
+    </div>
+  </div>
+
+  <main class="feed" id="feed"></main>
+
+  <div class="footer">
+    <p class="footer-note">Build <span class="mono" id="buildId"></span> · <span id="savedIndicator">прогрес зберігається автоматично</span></p>
+  </div>
+</div>
+
+<div class="confetti-layer" id="confetti"></div>
+
+<script>
+const ICONS = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  smile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9" y2="9.5"/><line x1="15" y1="9" x2="15" y2="9.5"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.2C0.2 8.6 2 5 5.6 5c2 0 3.3 1 4.4 2.4C11.1 6 12.4 5 14.4 5 18 5 19.8 8.6 22 11.8 19.5 16.4 12 21 12 21z"/></svg>'
+};
+
+const STEPS = [
+  { id:'brief', node:0, logLabel:'Бриф погоджено' },
+  { id:'research', node:1, logLabel:'Дослідження завершено' },
+  { id:'testing', node:2, logLabel:'Завантаження підтверджено' },
+  { id:'toast', node:2, logLabel:'Компоненти зібрано' },
+  { id:'installation', node:3, logLabel:'Встановлення завершено' },
+  { id:'release', node:4, logLabel:'Реліз опубліковано' }
+];
+
+const STORAGE_KEY = 'olea-quest:v1';
+let state = { step:0, checks:[false,false,false,false], log:[] };
+
+function pad(n){ return n.toString().padStart(2,'0'); }
+function nowTime(){ const d=new Date(); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function buildId(){ const d=new Date(); return d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate()); }
+
+async function saveState(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state), false); }
+  catch(e){ console.error('Не вдалося зберегти прогрес', e); }
+}
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){ state = JSON.parse(res.value); }
+  }catch(e){ /* немає збереженого прогресу — починаємо з нуля */ }
+}
+
+function advance(extra){
+  const s = STEPS[state.step];
+  state.log.push({ label: s.logLabel, time: nowTime() });
+  state.step += 1;
+  if(extra) Object.assign(state, extra);
+  saveState();
+  render();
+}
+
+document.getElementById('buildId').textContent = buildId();
+
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(confirm('Скинути прогрес квесту і почати з початку?')){
+    state = { step:0, checks:[false,false,false,false], log:[] };
+    await saveState();
+    render();
+  }
+});
+
+function renderPipeline(){
+  const activeNode = state.step < STEPS.length ? STEPS[state.step].node : 4;
+  const pct = (activeNode/4)*100;
+  document.getElementById('pipelineFill').style.width = pct+'%';
+  document.querySelectorAll('.node').forEach(n=>{
+    const idx = +n.dataset.node;
+    n.classList.remove('done','active');
+    if(idx < activeNode) n.classList.add('done');
+    else if(idx === activeNode) n.classList.add('active');
+  });
+  document.getElementById('versionPill').textContent = state.step>=STEPS.length ? 'v2026.1 · release' : 'v2026.1';
+}
+
+function logRowsHtml(){
+  return state.log.map(item=>`
+    <div class="log-row">
+      <span class="log-check">${ICONS.check}</span>
+      <span class="log-text">${item.label}</span>
+      <span class="log-time">${item.time}</span>
+    </div>`).join('');
+}
+
+function cardBrief(){
+  return `
+  <div class="card">
+    <span class="tag violet">PROJECT BRIEF</span>
+    <div class="kicker">🎉 Спеціальний реліз · лише сьогодні</div>
+    <h2>HAPPY BIRTHDAY, HELEN</h2>
+    <div class="meta-table">
+      <div class="meta-row"><span class="meta-key">Замовниця</span><span class="meta-val">Іменинниця · Сонечко · Хелен · Олена</span></div>
+      <div class="meta-row"><span class="meta-key">Посада</span><span class="meta-val">UX/UI Designer</span></div>
+      <div class="meta-row"><span class="meta-key">Мета проєкту</span><span class="meta-val" style="text-align:right;max-width:60%;">Привітання з днем народження, доставка позитивних емоцій та покращення умов роботи користувача</span></div>
+      <div class="meta-row"><span class="meta-key">Поточний етап</span><span class="meta-val">Phase 1 · Birthday Launch 🎂</span></div>
+    </div>
+    <p>Наступний етап відкриється після проходження першого рівня.</p>
+    <button class="btn" id="advanceBtn">Посмакувати сніданок і прийняти запрошення</button>
+  </div>`;
+}
+
+function cardResearch(){
+  return `
+  <div class="card">
+    <span class="tag teal">USER RESEARCH REPORT</span>
+    <h2>Звіт про дослідження користувача</h2>
+    <p>Після багаторічного спостереження за користувачем встановлено:</p>
+    <ul class="bullets">
+      <li>Користувач любить красиві речі</li>
+      <li>Користувач створює красиві речі</li>
+      <li>Користувач проводить багато часу за комп'ютером</li>
+      <li>Сьогодні у користувача день народження 🎉</li>
+      <li>Користувач робить світ навколо кращим щороку</li>
+      <li>Користувач заслуговує на найкраще</li>
+    </ul>
+    <p><b>Висновок:</b> поточна версія потребує апдейту.</p>
+    <div class="callout"><b>Завдання:</b> супроводити головного інженера проєкту — Сергія Ільїна — до визначеної локації.</div>
+    <button class="btn" id="advanceBtn">Вирушити на інспекцію об'єкта</button>
+  </div>`;
+}
+
+function cardTesting(){
+  return `
+  <div class="card">
+    <span class="tag amber">ACCEPTANCE TESTING</span>
+    <h2>Прийняття поставки</h2>
+    <p>На територію доставлено основні компоненти системи. Головний інженер здійснить погрузку.</p>
+    <div class="callout">
+      <b>Завдання користувача:</b> перевірити та супроводити доставку додому.<br><br>
+      Для прибуття на локацію «Дім» спершу потрібно отримати додаткові компоненти. Супроводьте переміщення головного інженера до дата-центру за адресою <b>Вокзальна, біля «Тейсті»</b>.
+    </div>
+    <div class="perm-row">
+      <span class="perm">${ICONS.smile.replace('viewBox','width="15" height="15" viewBox')} Усміхатися</span>
+      <span class="perm">${ICONS.heart.replace('viewBox','width="15" height="15" viewBox')} Обіймати інженера</span>
+    </div>
+    <button class="btn" id="advanceBtn">Підтвердити завантаження</button>
+  </div>`;
+}
+
+function cardToast(){
+  return `
+  <div class="toast-card">
+    <div class="toast-top">
+      <span class="toast-icon">${ICONS.check}</span>
+      <span class="toast-title">Усі компоненти зібрано</span>
+    </div>
+    <span class="toast-sub">СТАТУС: ГОТОВО ДО ТРАНСПОРТУВАННЯ</span>
+    <button class="btn" id="advanceBtn" style="margin-top:2px;">Їдемо додому</button>
+  </div>`;
+}
+
+function cardInstallation(){
+  const labels = ['Розпакувати систему','Не панікувати через кількість деталей','Довіритися головному монтажнику','Дочекатися фіналу збірки подарункової конструкції (ретельно контролюючи кожен крок)'];
+  const items = labels.map((l,i)=>`
+    <div class="checklist-item ${state.checks[i]?'checked':''}" data-idx="${i}" tabindex="0" role="checkbox" aria-checked="${state.checks[i]}">
+      <span class="box">${ICONS.check}</span>
+      <span class="label">${l}</span>
+    </div>`).join('');
+  const allChecked = state.checks.every(Boolean);
+  return `
+  <div class="card">
+    <span class="tag green">INSTALLATION GUIDE</span>
+    <h2>Встановлення системи</h2>
+    <p>Виконайте кроки, щоб запустити встановлення.</p>
+    <div class="checklist">${items}</div>
+    <button class="btn" id="advanceBtn" ${allChecked?'':'disabled'}>Підтвердити встановлення</button>
+  </div>`;
+}
+
+function cardRelease(){
+  const features = ['Регулювання висоти','Нова система освітлення — береже зір','Покращена ергономіка','Зручно вставати, щоб поцілувати Сергія','Зручно сідати, коли поцілувала Сергія','Підвищення комфорту й продуктивності'];
+  const fixed = ['Незручне робоче місце','Втома від сидіння'];
+  const featHtml = features.map(f=>`<div class="feat-row"><span class="mini-check">${ICONS.check}</span><span>${f}</span></div>`).join('');
+  const fixedHtml = fixed.map(f=>`<div class="feat-row fixed"><span class="mini-check">${ICONS.check}</span><span>${f}</span></div>`).join('');
+  return `
+  <div class="card" id="releaseCard">
+    <span class="tag violet">RELEASE NOTES</span>
+    <h2>OLEA Workspace 2026</h2>
+    <div class="release-version">version: <span class="mono">2026.1.0</span></div>
+    <div class="release-block">
+      <h4>Нові функції</h4>
+      ${featHtml}
+    </div>
+    <div class="release-block">
+      <h4>Виправлено</h4>
+      ${fixedHtml}
+    </div>
+    <div class="status-pill"><span class="dot"></span>Production · Deployment Successful</div>
+    <div class="footer-msg">Дякую, що вже багато років залишаєшся моїм улюбленим проєктом ❤️</div>
+  </div>`;
+}
+
+function attachHandlers(){
+  const btn = document.getElementById('advanceBtn');
+  if(btn){ btn.addEventListener('click', ()=> advance()); }
+  document.querySelectorAll('.checklist-item').forEach(el=>{
+    const toggle = ()=>{
+      const idx = +el.dataset.idx;
+      state.checks[idx] = !state.checks[idx];
+      saveState();
+      render();
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+  });
+}
+
+function fireConfetti(){
+  const colors = ['#5546D6','#0E8E82','#B5740A','#1C9D5B','#E6E3DC'];
+  const layer = document.getElementById('confetti');
+  layer.innerHTML='';
+  for(let i=0;i<40;i++){
+    const p = document.createElement('div');
+    p.className='confetti-piece';
+    const size = 6+Math.random()*6;
+    p.style.width=size+'px';
+    p.style.height=(size*0.6)+'px';
+    p.style.left=Math.random()*100+'vw';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration=(2.5+Math.random()*1.8)+'s';
+    p.style.animationDelay=(Math.random()*0.4)+'s';
+    layer.appendChild(p);
+  }
+  setTimeout(()=>{ layer.innerHTML=''; }, 5000);
+}
+
+function render(){
+  renderPipeline();
+  const feed = document.getElementById('feed');
+  const current = STEPS[state.step];
+  let html = logRowsHtml();
+
+  if(!current){
+    html += cardRelease();
+  } else {
+    switch(current.id){
+      case 'brief': html += cardBrief(); break;
+      case 'research': html += cardResearch(); break;
+      case 'testing': html += cardTesting(); break;
+      case 'toast': html += cardToast(); break;
+      case 'installation': html += cardInstallation(); break;
+      case 'release': html += cardRelease(); break;
+    }
+  }
+  feed.innerHTML = html;
+  attachHandlers();
+
+  if((!current && state.step===STEPS.length) || (current && current.id==='release')){
+    if(!state._confettiPlayed){
+      state._confettiPlayed = true;
+      fireConfetti();
+    }
+  }
+}
+
+(async function init(){
+  await loadState();
+  render();
+})();
+</script>
+</body>
+</html>
